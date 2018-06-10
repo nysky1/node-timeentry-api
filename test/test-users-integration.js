@@ -58,7 +58,7 @@ describe('User API Resource', function() {
     afterEach(function () {
         return tearDownDb();
     });
-
+ 
     after(function () {
         return closeServer();
     });
