@@ -2,6 +2,10 @@
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
+
+const {messages} = require('../constants/constants'); 
+const {PASSWORD_HASH_ITERATIONS} = require('../config');
+
 mongoose.Promise = global.Promise;
 
 const UserSchema = mongoose.Schema({
@@ -10,16 +14,24 @@ const UserSchema = mongoose.Schema({
     required: true,
     lowercase: true,
     unique: true,
-    minlength: [6, 'The username should be at least 6 characters'],
+    minlength: [6, messages.validationMessages.usernameLength],
   },
   password: {
     type: String,
     required: true,
-    minlength: [8, 'The password should be at least 8 characters'],
-    maxlength: [72, 'Whoa there cowboy, keep the password below 72 characters'],
+    minlength: [8, messages.validationMessages.passwordLength],
+    maxlength: [72, messages.validationMessages.passwordMaxLength],
   },
-  firstName: { type: String, required: true, minlength: [2, 'First name should be at least 2 characters'] },
-  lastName: { type: String, required: true, minlength: [2, 'First name should be at least 2 characters'] },
+  firstName: {
+    type: String,
+    required: true,
+    minlength: [2, messages.validationMessages.firstNameLength]
+  },
+  lastName: {
+    type: String,
+    required: true,
+    minlength: [2, messages.validationMessages.lastNameLength]
+  },
   email: {
     type: String,
     required: true,
@@ -38,25 +50,25 @@ UserSchema.methods.serialize = function () {
   };
 };
 
-UserSchema.plugin(uniqueValidator);
+UserSchema.plugin(uniqueValidator, { message: messages.validationMessages.uniqueField });
 
 UserSchema.methods.validatePassword = function (password) {
   return bcrypt.compare(password, this.password);
 };
 
 UserSchema.statics.hashPassword = function (password) {
-  return bcrypt.hash(password, 10);
+  return bcrypt.hash(password, PASSWORD_HASH_ITERATIONS);
 };
 
 UserSchema.pre('save', function userPreSave(next) {
   const user = this;
   if (this.isModified('password') || this.isNew) {
-      return bcrypt.hash(user.password, 10)
-          .then((hash) => {
-              user.password = hash;
-              return next();
-          })
-          .catch(err => next(err));
+    return bcrypt.hash(user.password, PASSWORD_HASH_ITERATIONS)
+      .then((hash) => {
+        user.password = hash;
+        return next();
+      })
+      .catch(err => next(err));
   }
   return next();
 });
