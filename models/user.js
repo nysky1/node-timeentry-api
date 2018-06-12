@@ -3,8 +3,8 @@ const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
 
-const {messages} = require('../constants/constants'); 
-const {PASSWORD_HASH_ITERATIONS} = require('../config');
+const { messages } = require('../constants/constants');
+const { PASSWORD_HASH_ITERATIONS } = require('../config');
 
 mongoose.Promise = global.Promise;
 
@@ -38,7 +38,8 @@ const UserSchema = mongoose.Schema({
     lowercase: true,
     unique: true,
     //,validate: validator.isEmail //follow-up
-  },
+  }
+  ,activities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activities' }]
 });
 
 UserSchema.methods.serialize = function () {
@@ -62,7 +63,9 @@ UserSchema.statics.hashPassword = function (password) {
 
 UserSchema.pre('save', function userPreSave(next) {
   const user = this;
+  
   if (this.isModified('password') || this.isNew) {
+    
     return bcrypt.hash(user.password, PASSWORD_HASH_ITERATIONS)
       .then((hash) => {
         user.password = hash;

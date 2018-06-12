@@ -24,7 +24,7 @@ function seedUserData() {
     return User.insertMany(seedData);
 }
 //unique test fields
-function generateRandomSuffix(){
+function generateRandomSuffix() {
     return Math.floor(Math.random() * 5000);
 }
 function generateFirstName() {
@@ -35,19 +35,11 @@ function generateLastName() {
     const lastNames = ['Smith', 'Miller', 'Shrute', 'Gold'];
     return lastNames[Math.floor(Math.random() * lastNames.length)];
 }
-function generateUsername() {
-    const usernames = ['joebob1', 'joebob2', 'joebob3', 'joebob4'];
-    return usernames[Math.floor(Math.random() * usernames.length)] + generateRandomSuffix();
-}
 function generatePassword() {
     const passwords = ['joebob1234', 'joebob2345', 'joebob3456', 'joebob4567'];
     return passwords[Math.floor(Math.random() * passwords.length)];
 }
-function generateEmail() {
-    const emails = ['joe@bob.com', 'joe1@bob.com', 'joe2@bob.com', 'joe3@bob.com'];
-    return emails[Math.floor(Math.random() * emails.length)] + generateRandomSuffix();
-}
-describe('User API Resource', function() {
+describe('User API Resource', function () {
     before(function () {
         return runServer(TEST_DATABASE_URL);
     });
@@ -58,7 +50,7 @@ describe('User API Resource', function() {
     afterEach(function () {
         return tearDownDb();
     });
- 
+
     after(function () {
         return closeServer();
     });
@@ -78,9 +70,10 @@ describe('User API Resource', function() {
                 })
 
         })
+        //follow up (condition to ensure user results not in production)
         it('should contain the expected fields', function () {
             let resBlog;
-            return chai.request(app)
+            chai.request(app)
                 .get('/api/users')
                 .then(function (res) {
                     expect(res).to.have.status(200);
@@ -91,7 +84,7 @@ describe('User API Resource', function() {
                     res.body.forEach(function (user) {
                         expect(user).to.be.a('object');
                         expect(user).to.include.keys(
-                            '_id', 'username', 'password', 'firstName', 'lastName','email'
+                            '_id', 'username', 'password', 'firstName', 'lastName', 'email'
                         );
                     });
 
@@ -103,11 +96,11 @@ describe('User API Resource', function() {
 
 function generateUserData() {
     return {
-        username: generateUsername(),
+        username: faker.internet.userName() + generateRandomSuffix(),
         password: generatePassword(),
         firstName: generateFirstName(),
         lastName: generateLastName(),
-        email: generateEmail()
+        email: faker.internet.email() + generateRandomSuffix()
     }
 }
 

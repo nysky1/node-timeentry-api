@@ -7,7 +7,7 @@ const passport = require('passport');
 const bodyParser = require('body-parser');
 
 const {router: usersRouter} = require('./routes/users');
-const {router: eventsRouter} = require('./routes/events');
+const {router: activitiesRouter} = require('./routes/activities');
 
 mongoose.Promise = global.Promise;
  
@@ -27,7 +27,7 @@ app.use(CORS.setCORS);
 
 //routes
 app.use('/api', usersRouter);
-app.use('/api', eventsRouter);
+app.use('/api', activitiesRouter);
 
 let server;
 
