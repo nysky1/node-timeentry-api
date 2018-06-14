@@ -8,6 +8,10 @@ const messages = {
         passwordMaxLength: 'Whoa there cowboy, limit the password to 72 characters',
         firstNameLength: 'First name should be at least 2 characters',
         lastNameLength: 'Last name should be at least 2 characters',
+    },
+    authenticationMessages: {
+        missingAccount: `Oops, we couldn't find that account.`,
+        badPassword: `Oops, your password was incorrect.`
     }
 }
 module.exports = {messages};

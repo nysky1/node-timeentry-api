@@ -1,3 +1,4 @@
+/* task: Add role to user model */
 'use strict';
 const bcrypt = require('bcryptjs');
 const mongoose = require('mongoose');
@@ -38,16 +39,23 @@ const UserSchema = mongoose.Schema({
     lowercase: true,
     unique: true,
     //,validate: validator.isEmail //follow-up
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user',
   }
   ,activities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activities' }]
 });
 
 UserSchema.methods.serialize = function () {
   return {
+    _id: this.id, //follow up
     username: this.username || '',
     firstName: this.firstName || '',
     lastName: this.lastName || '',
-    email: this.email || ''
+    email: this.email || '', 
+    activities: this.activities
   };
 };
 

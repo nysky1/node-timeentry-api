@@ -1,10 +1,10 @@
 module.exports = (...fields) => (req, res, next) => {
     for (let i = 0; i < fields.length; i += 1) {
         const field = fields[i];
-        if (!(field in req.body)) {
-            const message = `There is missing field '${field}' in your request body`;
+        if (req.body[field] !== req.body[field].trim()) {
+            const message = `Some fields cannot start or end with whitespace. Check '${field}' for spaces.`;
             return res.status(400).json({
-                generalMessage: 'Validation Error',
+                generalMessage: 'Incorrect Field Entry',
                 messages: [message],
             });
         }
