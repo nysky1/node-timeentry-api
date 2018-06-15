@@ -7,10 +7,12 @@ const config = require('../config');
 const { messages } = require('../constants/constants');
 
 const requiredFields = require('../middleware/required.fields');
+const privateFields = require('../middleware/private.fields');
 const stringFields = require('../middleware/string.fields');
 const trimFields = require('../middleware/trim.fields');
 const errorParser = require('../helpers/errorParser.helper');
 const disableWithToken = require('../middleware/disableWithToken').disableWithToken;
+const { userHasRoutePermission, userHasAdminPermission } = require('../middleware/userHasPermission');
 
 const { User } = require('../models/user');
 const { Activity } = require('../models/activity');
@@ -29,9 +31,9 @@ router.route('/login')
           }
           return result;
         })
-        .then( (existingUser) => {
+        .then((existingUser) => {
           existingUser.validatePassword(req.body.password)
-            .then( (isUserInfoCorrect) => {
+            .then((isUserInfoCorrect) => {
               if (!isUserInfoCorrect) {
                 return res.status(400).json({ generalMessage: messages.authenticationMessages.badPassword });
               }
@@ -53,32 +55,38 @@ router.route('/login')
   )
 
 router.route('/users/:id')
-  .get((req, res) => {
-    User.findById(req.params.id)
-      .populate('activities', 'activity activityDuration') //user model attribute
-      .then(user => {
-        res.status(200).json(user.serialize()).send
-      })
-      .catch((err) => {
-        res.status(400).json(errorParser.generateErrorResponse(err));
-      })
-  })
+  .get(
+    passport.authenticate('jwt', { session: false }),
+    userHasRoutePermission,
+    (req, res) => {
+      User.findById(req.params.id)
+        .populate('activities', 'activity activityDuration') //user model attribute
+        .then(user => {
+          res.status(200).json(user.serialize()).send
+        })
+        .catch((err) => {
+          res.status(400).json(errorParser.generateErrorResponse(err));
+        })
+    })
 
 /* GET users listing. */
 router.route('/users')
-  .get(passport.authenticate('jwt', { session: false }),(req, res) => {
-    User.find()
-      .then(users => {
-        res.status(200).json(
-          users.map(user => user.serialize())
-        )
-      })
-      .catch((err) => {
-        res.status(400).json(errorParser.generateErrorResponse(err));
-      })
-  })
+  .get(passport.authenticate('jwt', { session: false }),
+    userHasAdminPermission,
+    (req, res) => {
+      User.find()
+        .then(users => {
+          res.status(200).json(
+            users.map(user => user.serialize())
+          )
+        })
+        .catch((err) => {
+          res.status(400).json(errorParser.generateErrorResponse(err));
+        })
+    })
   .post(disableWithToken,
     requiredFields('username', 'password', 'firstName', 'lastName', 'email'),
+    privateFields('role'),
     stringFields('username', 'password', 'firstName', 'lastName', 'email'),
     trimFields('username', 'password'),
     (req, res) => {
@@ -97,29 +105,34 @@ router.route('/users')
         });
     })
 /* Add a Time entry to an existing user */
-router.route('/users/:id/addActivity') 
-  .put(requiredFields('activity', 'activityDuration', 'activityDate'), stringFields('activity', 'activityDate'), (req, res) => {
-    let { activity, activityDuration, activityDate } = req.body;
-    Activity.create({
-      activity: activity,
-      activityDuration: activityDuration,
-      activityDate: activityDate
+router.route('/users/:id/addActivity')
+  .put(passport.authenticate('jwt', { session: false }),
+    userHasRoutePermission,
+    requiredFields('activity', 'activityDuration', 'activityDate'),
+    stringFields('activity', 'activityDate'), (req, res) => {
+      let { activity, activityDuration, activityDate } = req.body;
+      Activity.create({
+        activity: activity,
+        activityDuration: activityDuration,
+        activityDate: activityDate
+      })
+        .then((activity) => User.findByIdAndUpdate(req.params.id, { $push: { activities: activity._id } }, { new: true }))
+        .then(updated => res.json(updated.serialize()))
+        .catch((err) => {
+          res.status(400).json(errorParser.generateErrorResponse(err));
+        })
     })
-      .then((activity) => User.findByIdAndUpdate(req.params.id, { $push: { activities: activity._id } }, { new: true }))
-      .then(updated => res.json(updated.serialize()))
-      .catch((err) => {
-        res.status(400).json(errorParser.generateErrorResponse(err));
-      })
-  })
 router.route('/users/:id/removeActivity/:activityId')
-  .delete((req, res) => {
-    Activity
-      .findByIdAndRemove(req.params.activityId)
-      .then((activity) => User.findByIdAndUpdate(req.params.id, { $pull: { activities: req.params.activityId } }, { new: true }))
-      .then(updated => res.status(204).json())
-      .catch((err) => {
-        res.status(400).json(errorParser.generateErrorResponse(err));
-      })
-  })
+  .delete(passport.authenticate('jwt', { session: false }),
+    userHasRoutePermission,
+    (req, res) => {
+      Activity
+        .findByIdAndRemove(req.params.activityId)
+        .then((activity) => User.findByIdAndUpdate(req.params.id, { $pull: { activities: req.params.activityId } }, { new: true }))
+        .then(updated => res.status(204).json())
+        .catch((err) => {
+          res.status(400).json(errorParser.generateErrorResponse(err));
+        })
+    })
 
 module.exports = { router };

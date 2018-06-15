@@ -11,7 +11,8 @@ const messages = {
     },
     authenticationMessages: {
         missingAccount: `Oops, we couldn't find that account.`,
-        badPassword: `Oops, your password was incorrect.`
+        badPassword: `Oops, your password was incorrect.`,
+        badRoute: `Oops, that is not available.`
     }
 }
 module.exports = {messages};
