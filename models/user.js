@@ -45,7 +45,7 @@ const UserSchema = mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user',
   }
-  ,activities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activities' }]
+  ,activities: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Activity' }] //this ref matches name of Mongoose Model
 });
 
 UserSchema.methods.serialize = function () {
@@ -55,6 +55,7 @@ UserSchema.methods.serialize = function () {
     firstName: this.firstName || '',
     lastName: this.lastName || '',
     email: this.email || '', 
+    role: this.role,
     activities: this.activities
   };
 };

@@ -11,6 +11,7 @@ const stringFields = require('../middleware/string.fields');
 const trimFields = require('../middleware/trim.fields');
 const errorParser = require('../helpers/errorParser.helper');
 const disableWithToken = require('../middleware/disableWithToken').disableWithToken;
+
 const { User } = require('../models/user');
 const { Activity } = require('../models/activity');
 
@@ -23,36 +24,38 @@ router.route('/login')
       User.findOne({ username: req.body.username })
         .then(result => {
           if (!result) {
-            res.status(400).json({ generalMessage: messages.authenticationMessages.missingAccount });
+            //return is important //follow up (why no promise rejection)
+            return res.status(400).json({ generalMessage: messages.authenticationMessages.missingAccount });
           }
           return result;
         })
-        .then(existingUser => {
-          existingUser.comparePassword(req.body.password)
-            .then(isUserInfoCorrect => {
+        .then( (existingUser) => {
+          existingUser.validatePassword(req.body.password)
+            .then( (isUserInfoCorrect) => {
               if (!isUserInfoCorrect) {
-                res.status(400).json({ generalMessage: messages.authenticationMessages.badPassword });
+                return res.status(400).json({ generalMessage: messages.authenticationMessages.badPassword });
               }
               const tokenPayload = {
-                _id: foundUser._id,
-                email: foundUser.email,
-                username: foundUser.username,
-                role: foundUser.role,
+                _id: existingUser._id,
+                email: existingUser.email,
+                username: existingUser.username,
+                role: existingUser.role,
               };
+
               const token = jwt.sign(tokenPayload, config.JWT_SECRET, {
                 expiresIn: config.JWT_EXPIRY,
               });
               return res.json({ token: `Bearer ${token}` });
             })
         })
-        .catch(report => res.status(400).json(errorsParser.generateErrorResponse(report)));
+        .catch(report => res.status(400).json(errorParser.generateErrorResponse(report)));
     }
   )
 
 router.route('/users/:id')
   .get((req, res) => {
     User.findById(req.params.id)
-      .populate('events', 'eventName')
+      .populate('activities', 'activity activityDuration') //user model attribute
       .then(user => {
         res.status(200).json(user.serialize()).send
       })
@@ -63,7 +66,7 @@ router.route('/users/:id')
 
 /* GET users listing. */
 router.route('/users')
-  .get((req, res) => {
+  .get(passport.authenticate('jwt', { session: false }),(req, res) => {
     User.find()
       .then(users => {
         res.status(200).json(
@@ -94,7 +97,7 @@ router.route('/users')
         });
     })
 /* Add a Time entry to an existing user */
-router.route('/users/:id/addActivity') //follow up, duration a string?
+router.route('/users/:id/addActivity') 
   .put(requiredFields('activity', 'activityDuration', 'activityDate'), stringFields('activity', 'activityDate'), (req, res) => {
     let { activity, activityDuration, activityDate } = req.body;
     Activity.create({
