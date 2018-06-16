@@ -8,6 +8,7 @@ const { messages } = require('../constants/constants');
 
 const requiredFields = require('../middleware/required.fields');
 const privateFields = require('../middleware/private.fields');
+const matchBody = require('../middleware/match.body');
 const stringFields = require('../middleware/string.fields');
 const trimFields = require('../middleware/trim.fields');
 const errorParser = require('../helpers/errorParser.helper');
@@ -109,7 +110,9 @@ router.route('/users/:id/addActivity')
   .put(passport.authenticate('jwt', { session: false }),
     userHasRoutePermission,
     requiredFields('activity', 'activityDuration', 'activityDate'),
-    stringFields('activity', 'activityDate'), (req, res) => {
+    stringFields('activity', 'activityDate'), 
+    matchBody('id'),
+    (req, res) => {
       let { activity, activityDuration, activityDate } = req.body;
       Activity.create({
         activity: activity,
@@ -134,5 +137,33 @@ router.route('/users/:id/removeActivity/:activityId')
           res.status(400).json(errorParser.generateErrorResponse(err));
         })
     })
+
+/* Update an existing event. */
+router.route('/users/:id/activities/:eventId')
+  .put(
+    requiredFields('activity', 'activityDuration', 'activityDate'),
+    stringFields('activity', 'activityDate'),
+    matchBody('id','eventId'),
+    (req, res) => {
+      if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
+        const message = (
+          `Request path id (${req.params.id}) and request body id ` +
+          `(${req.body.id}) must match`);
+        console.error(message);
+        return res.status(400).json({ message: message });
+      }
+      const activityToUpdate = {};
+      const updateableFields = ['activity', 'activityDuration', 'activityDate'];
+      updateableFields.forEach(field => {
+        if (field in req.body) {
+          activityToUpdate[field] = req.body[field];
+        }
+      });
+      Activity
+        .findByIdAndUpdate(req.params.eventId, { $set: activityToUpdate })
+        .then(activity => res.status(200).end())
+        .catch(err => res.status(500).json(errorParser.generateErrorResponse(err)))
+
+    });
 
 module.exports = { router };

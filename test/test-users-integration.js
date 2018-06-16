@@ -179,6 +179,7 @@ describe('User API Resource', function () {
                 .send(newItem)
                 .then(function (res) {
                     let newItemId = res.body._id;
+                    activityItem.id = newItemId; //id must match param /:id
                     const token = jwt.sign({ _id: newItemId, email: newItem.email, username: newItem.username, role: res.body.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
 
                     return chai.request(app)
@@ -298,7 +299,7 @@ describe('User API Resource', function () {
                                 '_id', 'username', 'firstName', 'lastName', 'email', 'activities'
                             );
                             
-                            const activityItem = { activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
+                            const activityItem = { id: newUserId , activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
                             //update the user with an activitity
                             return chai.request(app)
                                 .put(`/api/users/${newUserId}/addActivity`)
