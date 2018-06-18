@@ -73,25 +73,22 @@ describe('User API Resource', function () {
         return seedStaticUserData()
             .then(result => {
                 //static user id for authentication (regular user)
-                newUserId = result[0]._id;
-                
+                newUserId = result[0]._id;                
             })
             .then(seedStaticUserAdminData)
             .then(result => {
                 //static user id for authentication (admin user)
                 newAdminUserId = result[0]._id;
-                
                 return seedUserData();
             })
     });
-
     afterEach(function () {
         return tearDownDb();
     });
-
     after(function () {
         return closeServer();
     });
+    
     describe('GET endpoint', function () {
         /* BEGIN /API/USERS */
         it('should return with all users (AUTH, Admin only)', function () {

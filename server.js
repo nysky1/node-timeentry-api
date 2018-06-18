@@ -20,7 +20,7 @@ app.use(morgan('common'));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
-// middle-ware - follow up (not executed)
+// middle-ware
 app.use(CORS.setCORS); 
 
 //routes

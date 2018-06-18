@@ -1,4 +1,4 @@
-module.exports = (...fields) => (req, res, next) => {
+module.exports = (...fields) => (req, res, next) => {  //follow up
     for (let i = 0; i < fields.length; i += 1) {
         const field = fields[i];
         if ((field in req.body)) {
