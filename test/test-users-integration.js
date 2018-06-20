@@ -136,7 +136,7 @@ describe('User API Resource', function () {
                 .set('Authorization', `Bearer ${token}`)
                 .then(function (_res) {
                     res = _res;
-                    expect(res).to.have.status(400);
+                    expect(res).to.have.status(403);
                 })
         })
         /* END   /API/USERS */
@@ -206,7 +206,7 @@ describe('User API Resource', function () {
                         .set('Authorization', `Bearer ${token}`)
                         .send(activityItem)
                         .then(function (res) {
-                            expect(res).to.have.status(400)
+                            expect(res).to.have.status(403)
                         })
                 })
         });

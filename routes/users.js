@@ -48,7 +48,7 @@ router.route('/login')
               const token = jwt.sign(tokenPayload, config.JWT_SECRET, {
                 expiresIn: config.JWT_EXPIRY,
               });
-              return res.json({ token: `Bearer ${token}` });
+              return res.json({ token: `${token}` });
             })
         })
         .catch(report => res.status(400).json(errorParser.generateErrorResponse(report)));
