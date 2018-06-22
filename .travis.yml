@@ -2,3 +2,10 @@ language: node_js
 node_js: node
 services:
 - mongodb
+deploy:
+  provider: heroku
+  api_key:
+    secure: cpPFE6uGIpSe6KNv8T4cBc+LhH8SNo/CHza3ZqtuyoAUIq+418aFfUiQBwBL6seuq7bTt6gVNgBt/HVKlCmh5iR3QOqX1jz2Sqn/9MNCEfUqfIexTy3kJqMMVWQA0BjkKHuDrqkGCGwYKehL2FoUoOXsRf5MLYy3+b9XUxbuZDj7kyGug3ckejcSIsfcE/4ziG2m+oPXppQof2bgl9+LBvT2Op17E3aDHpahSsoVpVzS4yiGDdMraq8Pgx722At26bQdkfEB5Up5wYRcqdx4o2/gz7L7QutsxiFXIGNryhjeimG6xtz1L1y9G0wgQyjA0rHHdAOPAPRIrCQBmYaCiNbQgt+6/IXhGiavhjnkQe5HROQx9gqgvNDfYDiMTKQdvbbxPCHvIdjqy8Y5bmejKK3i9+VxfZFyUmuK9fHDFO5zdkEKjWglZYV4WDnqJsLTBUSrEZqrO23xjiAD7T6Mc6wDRO9frVrKlF/cIpjqyywyUVPkBw1nCpedCsBwPbsUssvDSD+wAcndPMGHkf+767S8kvXZdzM5P4gai62K8a9IdbYxz50QmutJSxenbyWg+wovV5TR+VJ3+/sDc2Fqlofg9TNoQ5ny0d4mHNja2wmAhxIND7HwHZLdDNYxndDqny48PIDWcEZRbylDVDaql0fF+XiTf2BRB0dHM7TqaWo=
+  app: stark-reef-77498
+  on:
+    repo: nysky1/node-timeentry-api
