@@ -61,7 +61,7 @@ router.route('/users/:id')
     userHasRoutePermission,
     (req, res) => {
       User.findById(req.params.id)
-        .populate('activities', 'activity activityDuration') //user model attribute
+        .populate('activities', 'activity activityDuration activityDate') //user model attribute
         .then(user => {
           res.status(200).json(user.serialize()).send
         })
@@ -69,6 +69,11 @@ router.route('/users/:id')
           res.status(400).json(errorParser.generateErrorResponse(err));
         })
     })
+/* Validate the token */
+router.route('/loginValidate')
+  .get(passport.authenticate('jwt', { session: false }),
+    (req, res) => res.json(req.user)
+  )
 
 /* GET users listing. */
 router.route('/users')
@@ -110,7 +115,7 @@ router.route('/users/:id/addActivity')
   .put(passport.authenticate('jwt', { session: false }),
     userHasRoutePermission,
     requiredFields('activity', 'activityDuration', 'activityDate'),
-    stringFields('activity', 'activityDate'), 
+    stringFields('activity', 'activityDate'),
     matchBody('id'),
     (req, res) => {
       let { activity, activityDuration, activityDate } = req.body;
@@ -143,7 +148,7 @@ router.route('/users/:id/activities/:eventId')
   .put(
     requiredFields('activity', 'activityDuration', 'activityDate'),
     stringFields('activity', 'activityDate'),
-    matchBody('id','eventId'),
+    matchBody('id', 'eventId'),
     (req, res) => {
       if (!(req.params.id && req.body.id && req.params.id === req.body.id)) {
         const message = (
@@ -161,7 +166,7 @@ router.route('/users/:id/activities/:eventId')
       });
       Activity
         .findByIdAndUpdate(req.params.eventId, { $set: activityToUpdate })
-        .then(activity => res.status(200).end())
+        .then(activity => res.status(200).json('OK'))
         .catch(err => res.status(500).json(errorParser.generateErrorResponse(err)))
 
     });
