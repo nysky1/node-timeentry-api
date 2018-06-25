@@ -73,7 +73,7 @@ describe('User API Resource', function () {
         return seedStaticUserData()
             .then(result => {
                 //static user id for authentication (regular user)
-                newUserId = result[0]._id;                
+                newUserId = result[0]._id;
             })
             .then(seedStaticUserAdminData)
             .then(result => {
@@ -88,7 +88,7 @@ describe('User API Resource', function () {
     after(function () {
         return closeServer();
     });
-    
+
     describe('GET endpoint', function () {
         /* BEGIN /API/USERS */
         it('should return with all users (AUTH, Admin only)', function () {
@@ -144,7 +144,7 @@ describe('User API Resource', function () {
         it('should return 1 user and have the expected fields (AUTH)', function () {
             let res;
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
-            
+
             return User.findOne()
                 .then(user => {
                     expect(user).to.not.be.empty;
@@ -166,9 +166,51 @@ describe('User API Resource', function () {
 
         })
         /* END  /API/USERS/ID */
+        /* BEGIN /API/VALIDATE TOKEN */
+        it('should validate the token and have the expected fields (AUTH)', function () {
+            let res;
+            const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
+
+            return User.findOne()
+                .then(user => {
+                    expect(user).to.not.be.empty;
+                    return chai.request(app)
+                        .get(`/api/loginValidate`)
+                        .set('Authorization', `Bearer ${token}`)
+                        .then(res => {
+                            expect(res).to.have.status(200);
+                            expect(res).to.be.json;
+                            expect(res.body).to.be.a('object');
+                            expect(res.body._id).to.not.equal(null);
+                            expect(user).to.be.a('object');
+                            expect(res.body).to.include.keys(
+                                '_id', 'username', 'email', 'role'
+                            );
+                        });
+                })
+
+        })
+        it('should NOT validate the token and have an empty response', function () {
+            let res;
+            const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
+            const dummyData = 'abc';
+            return User.findOne()
+                .then(user => {
+                    expect(user).to.not.be.empty;
+                    return chai.request(app)
+                        .get(`/api/loginValidate`)
+                        .set('Authorization', `Bearer ${token}${dummyData}`)
+                        .then(res => {
+                            expect(res).to.have.status(401);
+                            expect(res.body).to.be.a('object');
+                        });
+                })
+
+        })
+        /* END  /API/VALIDATE TOKEN */
     })
     describe('PUT endpoint', function () {
-        const activityItem = { activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };        
+        const activityItem = { activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
         it('should add a user (NO AUTH) and update them with a new activity (AUTH)', function () {
             const newItem = { username: "jbtest1", firstName: "Test First", lastName: "Test Last", email: "aa@aa.com", password: "Te3tPassw0rd" };
             return chai.request(app)
@@ -194,7 +236,7 @@ describe('User API Resource', function () {
         it('should fail trying to update a user with a new activity (AUTH)', function () {
             const badDataActivityItemMissing = { activityDuration: "1", activityDate: "6/11/2018" };
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
-        
+
             return chai.request(app)
                 .post('/api/users')
                 .set('Authorization', `Bearer ${token}`)
@@ -234,7 +276,7 @@ describe('User API Resource', function () {
             return chai.request(app)
                 .post('/api/users')
                 .send(newItem)
-                    expect(res).to.have.status(400);
+            expect(res).to.have.status(400);
         });
         it('should fail creating a user due to bad data (NO AUTH required)', function () {
             const badDataItemExtraSpace = { username: "jbtest1 ", firstName: "Test First", lastName: "Test Last", email: "aa@aa.com", password: "Te3tPassw0rd" };
@@ -275,7 +317,7 @@ describe('User API Resource', function () {
                 })
         });
     });
-    describe('DELETE endpoint', function () {  
+    describe('DELETE endpoint', function () {
         it('should delete an activity for a user (AUTH, AUTH, AUTH)', function () {
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
             return User.findById(newUserId)
@@ -295,8 +337,8 @@ describe('User API Resource', function () {
                             expect(res.body).to.include.keys(
                                 '_id', 'username', 'firstName', 'lastName', 'email', 'activities'
                             );
-                            
-                            const activityItem = { id: newUserId , activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
+
+                            const activityItem = { id: newUserId, activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
                             //update the user with an activitity
                             return chai.request(app)
                                 .put(`/api/users/${newUserId}/addActivity`)
