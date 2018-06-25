@@ -81,6 +81,7 @@ router.route('/users')
     userHasAdminPermission,
     (req, res) => {
       User.find()
+        .populate('activities', 'activity activityDuration activityDate')
         .then(users => {
           res.status(200).json(
             users.map(user => user.serialize())
