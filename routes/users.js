@@ -10,7 +10,7 @@ const requiredFields = require('../middleware/required.fields');
 const privateFields = require('../middleware/private.fields');
 const matchBody = require('../middleware/match.body');
 const stringFields = require('../middleware/string.fields');
-const trimFields = require('../middleware/trim.fields');
+const trimValidationFields = require('../middleware/trimValidation.fields');
 const errorParser = require('../helpers/errorParser.helper');
 const disableWithToken = require('../middleware/disableWithToken').disableWithToken;
 const { userHasRoutePermission, userHasAdminPermission } = require('../middleware/userHasPermission');
@@ -95,7 +95,7 @@ router.route('/users')
     requiredFields('username', 'password', 'firstName', 'lastName', 'email'),
     privateFields('role'),
     stringFields('username', 'password', 'firstName', 'lastName', 'email'),
-    trimFields('username', 'password'),
+    trimValidationFields('username', 'password'),
     (req, res) => {
       let { username, password, firstName, lastName, email } = req.body;
       firstName = firstName.trim(); lastName = lastName.trim(); email = email.trim();
@@ -112,7 +112,7 @@ router.route('/users')
         });
     })
 /* Add a Time entry to an existing user */
-router.route('/users/:id/addActivity')
+router.route('/users/:id/activity')
   .put(passport.authenticate('jwt', { session: false }),
     userHasRoutePermission,
     requiredFields('activity', 'activityDuration', 'activityDate'),
@@ -131,7 +131,7 @@ router.route('/users/:id/addActivity')
           res.status(400).json(errorParser.generateErrorResponse(err));
         })
     })
-router.route('/users/:id/removeActivity/:activityId')
+router.route('/users/:id/activity/:activityId')
   .delete(passport.authenticate('jwt', { session: false }),
     userHasRoutePermission,
     (req, res) => {
@@ -145,7 +145,7 @@ router.route('/users/:id/removeActivity/:activityId')
     })
 
 /* Update an existing event. */
-router.route('/users/:id/activities/:eventId')
+router.route('/users/:id/activity/:eventId')
   .put(
     requiredFields('activity', 'activityDuration', 'activityDate'),
     stringFields('activity', 'activityDate'),
@@ -155,8 +155,7 @@ router.route('/users/:id/activities/:eventId')
         const message = (
           `Request path id (${req.params.id}) and request body id ` +
           `(${req.body.id}) must match`);
-        console.error(message);
-        return res.status(400).json({ message: message });
+         res.status(400).json({ message: message });
       }
       const activityToUpdate = {};
       const updateableFields = ['activity', 'activityDuration', 'activityDate'];

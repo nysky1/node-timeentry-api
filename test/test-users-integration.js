@@ -14,8 +14,6 @@ const { User } = require('../models/user');
 const { app, runServer, closeServer } = require('../server');
 const { TEST_DATABASE_URL } = require('../config');
 
-require('../strategy/jwt.strategy')(passport);
-
 chai.use(chaiHttp);
 
 function seedUserData() {
@@ -130,19 +128,16 @@ describe('User API Resource', function () {
         })
         it('should fail returning all users (b/c AUTH but not ADMIN)', function () {
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
-            let res;
             return chai.request(app)
                 .get('/api/users')
                 .set('Authorization', `Bearer ${token}`)
-                .then(function (_res) {
-                    res = _res;
+                .then(function (res) {
                     expect(res).to.have.status(403);
                 })
         })
         /* END   /API/USERS */
         /* BEGIN /API/USERS/ID */
         it('should return 1 user and have the expected fields (AUTH)', function () {
-            let res;
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
 
             return User.findOne()
@@ -168,7 +163,6 @@ describe('User API Resource', function () {
         /* END  /API/USERS/ID */
         /* BEGIN /API/VALIDATE TOKEN */
         it('should validate the token and have the expected fields (AUTH)', function () {
-            let res;
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
 
             return User.findOne()
@@ -191,7 +185,6 @@ describe('User API Resource', function () {
 
         })
         it('should NOT validate the token and have an empty response', function () {
-            let res;
             const token = jwt.sign({ _id: newUserId, email: generateStaticUserData().email, username: generateStaticUserData().username, role: generateStaticUserData().role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
             const dummyData = 'abc';
             return User.findOne()
@@ -211,7 +204,10 @@ describe('User API Resource', function () {
     })
     describe('PUT endpoint', function () {
         const activityItem = { activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
+        const revisedActivityItem = { activity: "Helped with grading 2", activityDuration: "2", activityDate: "6/12/2018" };
+
         it('should add a user (NO AUTH) and update them with a new activity (AUTH)', function () {
+
             const newItem = { username: "jbtest1", firstName: "Test First", lastName: "Test Last", email: "aa@aa.com", password: "Te3tPassw0rd" };
             return chai.request(app)
                 .post('/api/users')
@@ -222,7 +218,7 @@ describe('User API Resource', function () {
                     const token = jwt.sign({ _id: newItemId, email: newItem.email, username: newItem.username, role: res.body.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
 
                     return chai.request(app)
-                        .put(`/api/users/${newItemId}/addActivity`)
+                        .put(`/api/users/${newItemId}/activity`)
                         .set('Authorization', `Bearer ${token}`)
                         .send(activityItem)
                         .then(function (res) {
@@ -230,6 +226,50 @@ describe('User API Resource', function () {
                             expect(res.body.activities).to.be.a('array');
                             expect(res.body.activities).to.have.lengthOf.at.least(1);
 
+                        })
+                })
+        })
+        it('should add a user (NO AUTH) and add an activity (AUTH) them update the  activity (AUTH)', function () {
+            const newItem = { username: "jbtest1", firstName: "Test First", lastName: "Test Last", email: "aa@aa.com", password: "Te3tPassw0rd" };
+            return chai.request(app)
+                .post('/api/users')
+                .send(newItem)
+                .then(function (res) {
+                    let newItemId = res.body._id;
+                    activityItem.id = newItemId; //id must match param /:id
+                    const token = jwt.sign({ _id: newItemId, email: newItem.email, username: newItem.username, role: res.body.role }, config.JWT_SECRET, { expiresIn: config.JWT_EXPIRY });
+
+                    return chai.request(app)
+                        .put(`/api/users/${newItemId}/activity`)
+                        .set('Authorization', `Bearer ${token}`)
+                        .send(activityItem)
+                        .then(function (res) {
+                            expect(res.body).to.be.a('object');
+                            expect(res.body.activities).to.be.a('array');
+                            expect(res.body.activities).to.have.lengthOf.at.least(1);
+
+                            let newActivityId = res.body.activities[0];
+                            revisedActivityItem.eventId = newActivityId;
+                            revisedActivityItem.id = newItemId;
+
+                            return chai.request(app)
+                                .put(`/api/users/${newItemId}/activity/${newActivityId}`)
+                                .set('Authorization', `Bearer ${token}`)
+                                .send(revisedActivityItem)
+                                .then(function (res) {
+                                    expect(res.body).to.be.equal('OK');
+
+                                    return chai.request(app)
+                                        .get(`/api/users/${newItemId}`)
+                                        .set('Authorization', `Bearer ${token}`)
+                                        .then(function (res) {
+                                            console.log(res.body);
+                                            expect(res.body).to.be.a('object');
+                                            expect(res.body.activities[0].activity).to.be.equal(revisedActivityItem.activity);
+                                            expect(res.body.activities[0].activityDate).to.be.equal(revisedActivityItem.activityDate);
+                                            expect(res.body.activities[0].activityDuration).to.be.equal(revisedActivityItem.activityDuration);
+                                        })
+                                })
                         })
                 })
         })
@@ -244,7 +284,7 @@ describe('User API Resource', function () {
                 .then(function (res) {
                     let newItemId = res.body._id;
                     return chai.request(app)
-                        .put(`/api/users/${newItemId}/addActivity`)
+                        .put(`/api/users/${newItemId}/activity`)
                         .set('Authorization', `Bearer ${token}`)
                         .send(activityItem)
                         .then(function (res) {
@@ -268,8 +308,16 @@ describe('User API Resource', function () {
                     expect(res.body._id).to.not.equal(null);
 
                     delete newItem.password;
-                    expect(res.body).to.deep.equal(Object.assign(newItem, { _id: res.body._id, firstName: res.body.firstName, lastName: res.body.lastName, username: res.body.username, email: res.body.email, activities: [], role: res.body.role }));
-                })
+                    expect(res.body).to.deep.equal(Object.assign(newItem, { 
+                        _id: res.body._id, 
+                        firstName: res.body.firstName, 
+                        lastName: res.body.lastName, 
+                        username: res.body.username, 
+                        email: res.body.email, 
+                        activities: [], role: 
+                        res.body.role }
+                    ));
+                });
         });
         it('should fail creating a user as an admin (NO AUTH required)', function () {
             const newItem = { username: "jbtest1", firstName: "Test First", lastName: "Test Last", email: "aa@aa.com", password: "Te3tPassw0rd", role: "admin" };
@@ -302,7 +350,7 @@ describe('User API Resource', function () {
                     expect(res.body).to.be.a('object');
                     expect(res.body.token).to.not.equal(null);
                     expect(res.body.token).to.not.equal(undefined);
-                })
+                });
         })
         it('should fail authentication due to bad password (NO AUTH)', function () {
             const credsBad = { username: generateStaticUserData().username, password: 'BadPassword' }
@@ -314,7 +362,7 @@ describe('User API Resource', function () {
                     expect(res).to.have.status(400);
                     expect(res).to.be.json;
                     expect(res.body.token).to.equal(undefined);
-                })
+                });
         });
     });
     describe('DELETE endpoint', function () {
@@ -341,7 +389,7 @@ describe('User API Resource', function () {
                             const activityItem = { id: newUserId, activity: "Helped with grading", activityDuration: "1", activityDate: "6/11/2018" };
                             //update the user with an activitity
                             return chai.request(app)
-                                .put(`/api/users/${newUserId}/addActivity`)
+                                .put(`/api/users/${newUserId}/activity`)
                                 .set('Authorization', `Bearer ${token}`)
                                 .send(activityItem)
                                 .then(res => {
@@ -354,7 +402,7 @@ describe('User API Resource', function () {
                                     let activityId = res.body.activities[0];
                                     //remove the activity
                                     return chai.request(app)
-                                        .delete(`/api/users/${newUserId}/removeActivity/${activityId}`)
+                                        .delete(`/api/users/${newUserId}/activity/${activityId}`)
                                         .set('Authorization', `Bearer ${token}`)
                                         .then(res => {
                                             expect(res).to.have.status(204);
@@ -367,11 +415,11 @@ describe('User API Resource', function () {
                                                     expect(res).to.be.json;
                                                     expect(res.body).to.be.a('object');
                                                     expect(res.body.activities).to.be.empty;
-                                                })
-                                        })
-                                })
+                                                });
+                                        });
+                                });
                         });
-                })
+                });
         });
     });
 
