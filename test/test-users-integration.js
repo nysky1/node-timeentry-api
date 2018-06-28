@@ -43,9 +43,8 @@ function seedStaticUserAdminData() {
     // this will return a promise
     return User.create(seedData);
 }
-
 function generateRandomSuffix() {
-    return Math.floor(Math.random() * 5000);
+    return Math.floor(Math.random() * 500000);
 }
 function generateFirstName() {
     const firstNames = ['Jim', 'Bob', 'John'];

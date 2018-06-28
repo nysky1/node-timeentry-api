@@ -1,6 +1,4 @@
-/* task: add min lengths with message 
-    minlength: [6, messages.validationMessages.activityLength],
-*/
+'use strict';
 const mongoose = require('mongoose');
 const uniqueValidator = require('mongoose-unique-validator');
 
