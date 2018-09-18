@@ -404,7 +404,7 @@ describe('User API Resource', function () {
                                         .delete(`/api/users/${newUserId}/activity/${activityId}`)
                                         .set('Authorization', `Bearer ${token}`)
                                         .then(res => {
-                                            expect(res).to.have.status(204);
+                                            expect(res).to.have.status(200);
                                             //check the activity is gone
                                             return chai.request(app)
                                                 .get(`/api/users/${user._id}`)
