@@ -28,7 +28,10 @@ router.route('/login')
         .then(result => {
           if (!result) {
             //return is important //follow up (why no promise rejection)
-            return res.status(400).json({ generalMessage: messages.authenticationMessages.missingAccount });
+            return Promise.reject({
+              generalMessage: messages.authenticationMessages.missingAccount
+            });
+            //old return res.status(400).json({ generalMessage: messages.authenticationMessages.missingAccount });
           }
           return result;
         })
@@ -48,10 +51,17 @@ router.route('/login')
               const token = jwt.sign(tokenPayload, config.JWT_SECRET, {
                 expiresIn: config.JWT_EXPIRY,
               });
-              return res.json({ token: `${token}` });
+              return res.json({ token: `${token}`, _id: existingUser._id, email: existingUser.email, username: existingUser.username, role: existingUser.role,  });
             })
         })
-        .catch(report => res.status(400).json(errorParser.generateErrorResponse(report)));
+        .catch(report => {
+          if (report.generalMessage) {
+            return res.status(400).json(report);
+          }
+          else {
+            return res.status(400).json(errorParser.generateErrorResponse(report));
+          }
+        });
     }
   )
 
@@ -91,6 +101,7 @@ router.route('/users')
           res.status(400).json(errorParser.generateErrorResponse(err));
         })
     })
+    //CREATE A USER
   .post(disableWithToken,
     requiredFields('username', 'password', 'firstName', 'lastName', 'email'),
     privateFields('role'),
@@ -138,11 +149,29 @@ router.route('/users/:id/activity/:activityId')
       Activity
         .findByIdAndRemove(req.params.activityId)
         .then((activity) => User.findByIdAndUpdate(req.params.id, { $pull: { activities: req.params.activityId } }, { new: true }))
-        .then(updated => res.status(204).json())
+        .then(updated => res.status(200).json({})) //todo: update test
         .catch((err) => {
           res.status(400).json(errorParser.generateErrorResponse(err));
         })
     })
+//Get an Activity
+    router.route('/users/:id/activity/:activityId')
+    .get(passport.authenticate('jwt', { session: false }),
+      userHasRoutePermission,
+      (req, res) => {
+        Activity
+          .findById(req.params.activityId)
+          .populate('activities', 'activity activityDuration activityDate')
+          .then(activity => {
+            res.status(200).json(activity).send
+          })
+          //.then((activity) => User.findByIdAndUpdate(req.params.id, { $pull: { activities: req.params.activityId } }, { new: true }))
+          //.then(updated => res.status(204).json())
+          .catch((err) => {
+            console.log(err);
+            res.status(400).json(errorParser.generateErrorResponse(err));
+          })
+      })
 
 /* Update an existing event. */
 router.route('/users/:id/activity/:eventId')
@@ -155,7 +184,7 @@ router.route('/users/:id/activity/:eventId')
         const message = (
           `Request path id (${req.params.id}) and request body id ` +
           `(${req.body.id}) must match`);
-         res.status(400).json({ message: message });
+        res.status(400).json({ message: message });
       }
       const activityToUpdate = {};
       const updateableFields = ['activity', 'activityDuration', 'activityDate'];
